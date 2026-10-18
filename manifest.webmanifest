@@ -1,0 +1,16 @@
+{
+  "name": "NeoCalc – Neonatal Quick Reference",
+  "short_name": "NeoCalc",
+  "description": "Neonatal resuscitation (CODE), total fluid goal, enteral feeds and GIR calculators.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f5c78",
+  "theme_color": "#0f5c78",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

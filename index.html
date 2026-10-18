@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>NeoCalc</title>
+  <meta name="description" content="Neonatal quick reference: resuscitation (CODE), total fluid goal, enteral feeds, and GIR." />
+  <meta name="theme-color" content="#0f5c78" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="NeoCalc" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <style>
+    :root {
+      --bg: #f2f4f7;
+      --surface: #ffffff;
+      --surface-2: #f7f8fa;
+      --border: #e1e5eb;
+      --text: #14181f;
+      --muted: #5d6673;
+      --brand: #0f5c78;
+      --brand-ink: #ffffff;
+      --accent: #127fa3;
+      --code: #c0392b;
+      --fluids: #1f7a4d;
+      --feeds: #8a5a00;
+      --gir: #6b3fa0;
+      --warn-bg: #fff6e0;
+      --warn-text: #6b4a00;
+      --radius: 14px;
+      --nav-h: 64px;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --surface-2: #1c232c;
+        --border: #2a323d;
+        --text: #e8ecf1;
+        --muted: #9aa4b2;
+        --brand: #0f4d65;
+        --accent: #4fb3d9;
+        --code: #ff6b5e;
+        --fluids: #4cc38a;
+        --feeds: #e0a83a;
+        --gir: #b58cf0;
+        --warn-bg: #2d2410;
+        --warn-text: #f2cf7a;
+        color-scheme: dark;
+      }
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+    }
+
+    /* Header */
+    header {
+      position: sticky; top: 0; z-index: 10;
+      background: var(--brand); color: var(--brand-ink);
+      padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+    }
+    .header-row { max-width: 640px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    header h1 { font-size: 1.15rem; margin: 0; font-weight: 700; letter-spacing: .2px; }
+    .pt-chip {
+      appearance: none; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.12);
+      color: inherit; font: inherit; font-size: .85rem; padding: 6px 10px; border-radius: 999px;
+      cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%;
+    }
+    .pt-chip[hidden] { display: none; }
+
+    main { max-width: 640px; margin: 0 auto; padding: 14px 16px 24px; }
+    section.screen { display: none; }
+    section.screen.active { display: block; }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px; margin-bottom: 14px;
+    }
+    .card h2 { font-size: 1rem; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+    .card h2 .bar { width: 4px; height: 18px; border-radius: 2px; background: var(--accent); }
+    .card.code h2 .bar { background: var(--code); }
+    .card.fluids h2 .bar { background: var(--fluids); }
+    .card.feeds h2 .bar { background: var(--feeds); }
+    .card.gir h2 .bar { background: var(--gir); }
+
+    label { display: block; font-weight: 600; font-size: .92rem; margin: 10px 0 4px; }
+    label:first-child { margin-top: 0; }
+    input, select {
+      width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px;
+      font-size: 16px; background: var(--surface-2); color: var(--text);
+    }
+    input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+    .row { display: flex; gap: 10px; }
+    .row > * { flex: 1 1 0; min-width: 0; }
+    .row > select { flex: 0 0 84px; }
+    .hint { color: var(--muted); font-size: .85rem; margin-top: 6px; }
+
+    /* Segmented control */
+    .seg { display: flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 3px; }
+    .seg button {
+      flex: 1; appearance: none; border: 0; background: transparent; color: var(--muted);
+      font: inherit; font-size: .9rem; font-weight: 600; padding: 9px 6px; border-radius: 8px; cursor: pointer;
+    }
+    .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+
+    /* Landing tool buttons */
+    .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .tool-btn {
+      appearance: none; text-align: left; cursor: pointer; font: inherit; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); border-left: 5px solid var(--accent);
+      border-radius: var(--radius); padding: 14px 12px; min-height: 78px;
+    }
+    .tool-btn strong { display: block; font-size: 1.05rem; }
+    .tool-btn span { display: block; color: var(--muted); font-size: .8rem; margin-top: 2px; }
+    .tool-btn.code { border-left-color: var(--code); }
+    .tool-btn.fluids { border-left-color: var(--fluids); }
+    .tool-btn.feeds { border-left-color: var(--feeds); }
+    .tool-btn.gir { border-left-color: var(--gir); }
+    .tool-btn:active { transform: scale(.98); }
+
+    /* Result list rows */
+    .kv { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .kv:last-child { border-bottom: 0; padding-bottom: 0; }
+    .kv:first-of-type { padding-top: 0; }
+    .kv .k { color: var(--muted); }
+    .kv .k small { display: block; font-size: .78rem; opacity: .85; }
+    .kv .v { font-weight: 700; font-size: 1.1rem; text-align: right; white-space: nowrap; }
+    .kv .v small { display: block; font-weight: 500; font-size: .78rem; color: var(--muted); }
+    .code .v { color: var(--code); }
+    .code .v.alt { color: var(--accent); }
+
+    /* Tiles */
+    .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .tile { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; }
+    .tile .label { font-size: .85rem; color: var(--muted); }
+    .tile .value { font-weight: 700; font-size: 1.45rem; margin: 2px 0; }
+    .fluids .tile .value { color: var(--fluids); }
+    .feeds .tile .value { color: var(--feeds); }
+    .gir .tile .value { color: var(--gir); }
+
+    .drip { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--border); }
+    .drip:last-child { border-bottom: 0; }
+    .drip .title { grid-column: 1 / -1; font-size: .8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .drip label { margin: 0 0 4px; font-size: .85rem; }
+
+    .btns { display: flex; gap: 10px; margin-top: 12px; }
+    .btn {
+      appearance: none; font: inherit; font-weight: 600; cursor: pointer; padding: 11px 14px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--text); color: var(--bg); flex: 1;
+    }
+    .btn.secondary { background: var(--surface); color: var(--text); }
+
+    .need {
+      background: var(--warn-bg); color: var(--warn-text); border-radius: var(--radius);
+      padding: 12px 14px; margin-bottom: 14px; font-size: .92rem;
+    }
+    .need button { appearance: none; border: 0; background: none; color: inherit; font: inherit; font-weight: 700; text-decoration: underline; padding: 0; cursor: pointer; }
+    .note { color: var(--muted); font-size: .8rem; margin-top: 10px; }
+    .disclaimer { color: var(--muted); font-size: .75rem; text-align: center; margin: 8px 0 0; }
+
+    /* Bottom nav */
+    nav.tabbar {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    nav.tabbar ul { list-style: none; margin: 0 auto; padding: 0; display: flex; max-width: 640px; height: var(--nav-h); }
+    nav.tabbar li { flex: 1; }
+    nav.tabbar a {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 100%;
+      color: var(--muted); text-decoration: none; font-size: .72rem; font-weight: 600;
+    }
+    nav.tabbar svg { width: 24px; height: 24px; }
+    nav.tabbar a[aria-current="page"] { color: var(--accent); }
+    nav.tabbar a[data-tab="code"][aria-current="page"] { color: var(--code); }
+    nav.tabbar a[data-tab="fluids"][aria-current="page"] { color: var(--fluids); }
+    nav.tabbar a[data-tab="feeds"][aria-current="page"] { color: var(--feeds); }
+    nav.tabbar a[data-tab="gir"][aria-current="page"] { color: var(--gir); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-row">
+      <h1 id="screenTitle">NeoCalc</h1>
+      <button type="button" class="pt-chip" id="ptChip" hidden aria-label="Edit patient"></button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ============ PATIENT (landing) ============ -->
+    <section class="screen" id="screen-patient" aria-label="Patient">
+      <div class="card">
+        <h2><span class="bar"></span>Patient</h2>
+
+        <label for="wt">Weight</label>
+        <div class="row">
+          <input id="wt" type="number" inputmode="decimal" min="0" step="0.001" placeholder="e.g., 3.2" />
+          <select id="wtUnit" aria-label="Weight unit">
+            <option value="kg" selected>kg</option>
+            <option value="g">g</option>
+          </select>
+        </div>
+
+        <label for="gaWeeks">Gestational age</label>
+        <div class="row">
+          <input id="gaWeeks" type="number" inputmode="numeric" min="20" max="45" step="1" placeholder="weeks" aria-label="Gestational age weeks" />
+          <input id="gaDays" type="number" inputmode="numeric" min="0" max="6" step="1" placeholder="days (0–6)" aria-label="Gestational age days" />
+        </div>
+
+        <label for="dol">Day of life</label>
+        <input id="dol" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g., 1" />
+
+        <div class="btns">
+          <button type="button" class="btn secondary" id="clearPatient">New patient</button>
+        </div>
+      </div>
+
+      <div class="tools">
+        <button type="button" class="tool-btn code" data-go="code"><strong>CODE</strong><span>Lines, airway, meds</span></button>
+        <button type="button" class="tool-btn fluids" data-go="fluids"><strong>Fluids</strong><span>Total fluid goal</span></button>
+        <button type="button" class="tool-btn feeds" data-go="feeds"><strong>Feeds</strong><span>Enteral volumes</span></button>
+        <button type="button" class="tool-btn gir" data-go="gir"><strong>GIR</strong><span>GIR &amp; total fluid intake</span></button>
+      </div>
+      <p class="disclaimer">Reference tool only. Verify all calculations against institutional protocols.</p>
+    </section>
+
+    <!-- ============ CODE ============ -->
+    <section class="screen code" id="screen-code" aria-label="CODE">
+      <div class="need" id="code-need">Enter a <b>weight</b> to see CODE values. <button type="button" data-go="patient">Go to Patient</button></div>
+      <div id="code-body">
+        <div class="card code">
+          <h2><span class="bar"></span>Line placement</h2>
+          <div class="kv"><span class="k">Venous catheter (UVC)</span><span class="v"><span id="uvc">—</span> cm</span></div>
+          <div class="kv"><span class="k">Arterial catheter (UAC)</span><span class="v"><span id="uac">—</span> cm</span></div>
+        </div>
+
+        <div class="card code">
+          <h2><span class="bar"></span>Equipment sizes</h2>
+          <div class="kv"><span class="k">Endotracheal tube</span><span class="v" id="ett">—</span></div>
+          <div class="kv"><span class="k">LMA size</span><span class="v" id="lma">—</span></div>
+          <div class="kv"><span class="k">Laryngoscope blade</span><span class="v" id="blade">—</span></div>
+        </div>
+
+        <div class="card code">
+          <h2><span class="bar"></span>Medications &amp; fluids</h2>
+          <div class="kv">
+            <span class="k">Epinephrine IV/IO<small>0.01–0.03 mg/kg · 0.1 mg/mL</small></span>
+            <span class="v"><span id="epiIVml">—</span> mL<small><span id="epiIVmg">—</span> mg</small></span>
+          </div>
+          <div class="kv">
+            <span class="k">Epinephrine ETT<small>0.05–0.1 mg/kg · 0.1 mg/mL</small></span>
+            <span class="v"><span id="epiETTml">—</span> mL<small><span id="epiETTmg">—</span> mg</small></span>
+          </div>
+          <div class="kv">
+            <span class="k">Normal saline bolus<small>10 mL/kg</small></span>
+            <span class="v alt"><span id="nsBolus">—</span> mL</span>
+          </div>
+          <div class="kv">
+            <span class="k">D10 bolus<small>2 mL/kg</small></span>
+            <span class="v alt"><span id="d10Bolus">—</span> mL</span>
+          </div>
+          <div class="kv">
+            <span class="k">Maintenance IV rate<small id="maintBasis">GA ≥ 37 wk: 60 mL/kg/day · else 80</small></span>
+            <span class="v alt" id="maintWrap"><span id="maintIV">—</span> mL/hr</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FLUIDS (Total Fluid Goal) ============ -->
+    <section class="screen fluids" id="screen-fluids" aria-label="Fluids">
+      <div class="need" id="fluids-need">Total fluid goal needs <b id="fluids-missing">weight, gestational age and day of life</b>. <button type="button" data-go="patient">Go to Patient</button></div>
+      <div class="card fluids">
+        <h2><span class="bar"></span>Total fluid goal (TFG)</h2>
+        <div class="tiles">
+          <div class="tile"><div class="label">TFG</div><div class="value" id="tfg">—</div><div class="label">mL/kg/day</div></div>
+          <div class="tile"><div class="label">TFG per hour</div><div class="value" id="tfgHr">—</div><div class="label">mL/kg/hr</div></div>
+          <div class="tile"><div class="label">Daily volume</div><div class="value" id="tfgDaily">—</div><div class="label">mL/day</div></div>
+          <div class="tile"><div class="label">Hourly rate</div><div class="value" id="tfgHourly">—</div><div class="label">mL/hr</div></div>
+        </div>
+        <p class="note">DOL 1: 80 mL/kg/day if GA &lt; 37 weeks; 60 mL/kg/day if GA ≥ 37 weeks. Increase 20 mL/kg/day per DOL to a max of 150 mL/kg/day. Rounded to whole numbers.</p>
+      </div>
+    </section>
+
+    <!-- ============ FEEDS ============ -->
+    <section class="screen feeds" id="screen-feeds" aria-label="Feeds">
+      <div class="need" id="feeds-need">Enter a <b>weight</b> to calculate feeds. <button type="button" data-go="patient">Go to Patient</button></div>
+      <div class="card feeds">
+        <h2><span class="bar"></span>Enteral feeds</h2>
+        <div class="seg" role="group" aria-label="Mode">
+          <button type="button" id="modeFeedvol" aria-pressed="true">Volume per feed</button>
+          <button type="button" id="modeTotal" aria-pressed="false">Total mL/kg/day</button>
+        </div>
+
+        <div id="inputsFeedvol">
+          <label for="goal">Enteral goal (mL/kg/day)</label>
+          <input id="goal" type="number" inputmode="decimal" min="0" step="1" placeholder="e.g., 150" />
+        </div>
+        <div id="inputsTotal" hidden>
+          <label for="volPerFeed">Volume per feed (mL)</label>
+          <input id="volPerFeed" type="number" inputmode="decimal" min="0" step="1" placeholder="e.g., 40" />
+        </div>
+        <p class="hint">Feeds per day: <strong>8</strong> (q3h, fixed)</p>
+
+        <div class="tiles" id="feedsResults" hidden>
+          <div class="tile"><div class="label" id="fLab1">Volume per feed</div><div class="value" id="fOut1">—</div><div class="label" id="fUnit1">mL</div></div>
+          <div class="tile"><div class="label" id="fLab2">Total enteral</div><div class="value" id="fOut2">—</div><div class="label" id="fUnit2">mL/kg/day</div></div>
+        </div>
+        <div class="btns" id="feedsBtns" hidden>
+          <button type="button" class="btn" id="feedsCopy">Copy results</button>
+          <button type="button" class="btn secondary" id="feedsReset">Reset</button>
+        </div>
+        <p class="note">Rounding: feed volume to nearest whole mL; total enteral to whole mL/kg/day.</p>
+      </div>
+    </section>
+
+    <!-- ============ GIR ============ -->
+    <section class="screen gir" id="screen-gir" aria-label="GIR">
+      <div class="need" id="gir-need">Enter a <b>weight</b> to calculate GIR. <button type="button" data-go="patient">Go to Patient</button></div>
+      <div class="card gir">
+        <h2><span class="bar"></span>Infusions</h2>
+        <p class="hint" style="margin-top:0">Enter up to 4 infusions. Leave unused rows blank.</p>
+        <div id="drips"></div>
+      </div>
+      <div class="card gir" id="girResults" hidden>
+        <h2><span class="bar"></span>Results</h2>
+        <div class="tiles" style="margin-top:0">
+          <div class="tile"><div class="label">Overall GIR</div><div class="value" id="gir">—</div><div class="label">mg/kg/min</div></div>
+          <div class="tile"><div class="label">Total fluid intake</div><div class="value" id="tfi">—</div><div class="label">mL/kg/day</div></div>
+        </div>
+        <p class="hint" id="tfgCompare" hidden></p>
+        <div class="btns">
+          <button type="button" class="btn" id="girCopy">Copy results</button>
+          <button type="button" class="btn secondary" id="girReset">Reset</button>
+        </div>
+      </div>
+      <p class="note">GIR per drip = (Dextrose % × Rate mL/h) ÷ (6 × Weight kg); overall GIR is the sum. Total fluid intake = (Σ rates × 24) ÷ Weight. GIR rounded to 1 decimal, TFI to whole mL/kg/day.</p>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="Sections">
+    <ul>
+      <li><a href="#patient" data-tab="patient">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+        Patient</a></li>
+      <li><a href="#code" data-tab="code">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>
+        CODE</a></li>
+      <li><a href="#fluids" data-tab="fluids">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg>
+        Fluids</a></li>
+      <li><a href="#feeds" data-tab="feeds">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2h6M10 2v3l-3 4v11a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9l-3-4V2"/><path d="M7 13h10"/></svg>
+        Feeds</a></li>
+      <li><a href="#gir" data-tab="gir">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10v6l-5 5-5-5z"/><path d="M12 14v4"/><circle cx="12" cy="20" r="1.5"/></svg>
+        GIR</a></li>
+    </ul>
+  </nav>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const TITLES = { patient: 'NeoCalc', code: 'CODE', fluids: 'Fluids', feeds: 'Feeds', gir: 'GIR' };
+    const STORE_KEY = 'neocalc.v1';
+
+    // ---------- Shared patient state ----------
+    const PATIENT_FIELDS = ['wt', 'wtUnit', 'gaWeeks', 'gaDays', 'dol'];
+    const TOOL_FIELDS = ['goal', 'volPerFeed', 'dex1', 'rate1', 'dex2', 'rate2', 'dex3', 'rate3', 'dex4', 'rate4'];
+
+    function num(id) {
+      const v = parseFloat($(id).value);
+      return Number.isNaN(v) ? null : v;
+    }
+
+    function getPatient() {
+      let wtKg = num('wt');
+      if (wtKg !== null && wtKg > 0) {
+        if ($('wtUnit').value === 'g') wtKg = wtKg / 1000;
+      } else {
+        wtKg = null;
+      }
+      const w = num('gaWeeks');
+      const d = num('gaDays');
+      const gaWeeks = w === null ? null : Math.floor(w);
+      const gaDays = d === null ? 0 : Math.max(0, Math.min(6, Math.floor(d)));
+      const dolRaw = num('dol');
+      const dol = dolRaw === null ? null : Math.max(1, Math.floor(dolRaw));
+      return { wtKg, gaWeeks, gaDays, dol };
+    }
+
+    // GA >= 37 completed weeks counts as term for both CODE maintenance and TFG.
+    function isTerm(p) { return p.gaWeeks !== null && p.gaWeeks >= 37; }
+
+    // Total fluid goal (mL/kg/day) from GA + DOL
+    function totalFluidGoal(p) {
+      if (p.gaWeeks === null || p.dol === null) return null;
+      const base = isTerm(p) ? 60 : 80;
+      return Math.min(150, base + 20 * (p.dol - 1));
+    }
+
+    function fmt(n, dp) { return n.toFixed(dp); }
+
+    function updateChip() {
+      const p = getPatient();
+      const parts = [];
+      if (p.wtKg !== null) parts.push(`${+p.wtKg.toFixed(3)} kg`);
+      if (p.gaWeeks !== null) parts.push(`${p.gaWeeks}+${p.gaDays} wk`);
+      if (p.dol !== null) parts.push(`DOL ${p.dol}`);
+      $('ptChip').textContent = parts.length ? parts.join(' · ') : 'Enter patient';
+    }
+
+    // ---------- CODE ----------
+    function computeCode() {
+      const p = getPatient();
+      const has = p.wtKg !== null;
+      $('code-need').hidden = has;
+      $('code-body').style.opacity = has ? '1' : '.45';
+      const ids = ['uvc', 'uac', 'ett', 'lma', 'blade', 'epiIVml', 'epiIVmg', 'epiETTml', 'epiETTmg', 'nsBolus', 'd10Bolus', 'maintIV'];
+      if (!has) { ids.forEach(id => $(id).textContent = '—'); return; }
+      const wt = p.wtKg;
+
+      // Line placement (high UAC = 3×wt + 9; UVC = UAC/2 + 1)
+      const uac = wt * 3 + 9;
+      const uvc = uac / 2 + 1;
+      $('uac').textContent = fmt(uac, 1);
+      $('uvc').textContent = fmt(uvc, 1);
+
+      // Equipment by weight
+      let ett, lma, blade;
+      if (wt < 1) { ett = '2.5'; lma = '0'; blade = '0'; }
+      else if (wt <= 2) { ett = '3'; lma = '0'; blade = '1'; }
+      else if (wt <= 3.5) { ett = '3.5'; lma = '1'; blade = '1 or 2'; }
+      else { ett = '4'; lma = '1'; blade = '2'; }
+      $('ett').textContent = ett;
+      $('lma').textContent = lma;
+      $('blade').textContent = blade;
+
+      // Epinephrine 0.1 mg/mL. NRP ranges: IV/IO 0.01–0.03 mg/kg, ETT 0.05–0.1 mg/kg.
+      const range = (lo, hi, dp) => `${fmt(lo, dp)}–${fmt(hi, dp)}`;
+      $('epiIVmg').textContent = range(wt * 0.01, wt * 0.03, 3);
+      $('epiIVml').textContent = range(wt * 0.1, wt * 0.3, 2);
+      $('epiETTmg').textContent = range(wt * 0.05, wt * 0.1, 3);
+      $('epiETTml').textContent = range(wt * 0.5, wt * 1, 2);
+
+      $('nsBolus').textContent = fmt(wt * 10, 1);
+      $('d10Bolus').textContent = fmt(wt * 2, 1);
+
+      if (p.gaWeeks === null) {
+        $('maintIV').textContent = '—';
+        $('maintBasis').textContent = 'Needs gestational age';
+      } else {
+        const perKgDay = isTerm(p) ? 60 : 80;
+        $('maintIV').textContent = fmt(wt * perKgDay / 24, 2);
+        $('maintBasis').textContent = `${perKgDay} mL/kg/day (GA ${isTerm(p) ? '≥' : '<'} 37 wk)`;
+      }
+    }
+
+    // ---------- FLUIDS (TFG) ----------
+    function computeFluids() {
+      const p = getPatient();
+      const missing = [];
+      if (p.wtKg === null) missing.push('weight');
+      if (p.gaWeeks === null) missing.push('gestational age');
+      if (p.dol === null) missing.push('day of life');
+      $('fluids-need').hidden = missing.length === 0;
+      $('fluids-missing').textContent = missing.join(', ');
+      const out = ['tfg', 'tfgHr', 'tfgDaily', 'tfgHourly'];
+      if (missing.length) { out.forEach(id => $(id).textContent = '—'); return; }
+
+      const tfg = totalFluidGoal(p);
+      const daily = Math.round(tfg * p.wtKg);
+      $('tfg').textContent = String(Math.round(tfg));
+      $('tfgHr').textContent = String(Math.round(tfg / 24));
+      $('tfgDaily').textContent = String(daily);
+      $('tfgHourly').textContent = String(Math.round(daily / 24));
+    }
+
+    // ---------- FEEDS ----------
+    const FEEDS_PER_DAY = 8;
+    let feedsMode = 'feedvol';
+
+    function setFeedsMode(mode) {
+      feedsMode = mode;
+      $('modeFeedvol').setAttribute('aria-pressed', String(mode === 'feedvol'));
+      $('modeTotal').setAttribute('aria-pressed', String(mode === 'total'));
+      $('inputsFeedvol').hidden = mode !== 'feedvol';
+      $('inputsTotal').hidden = mode !== 'total';
+      computeFeeds();
+      save();
+    }
+
+    function showFeeds(show) {
+      $('feedsResults').hidden = !show;
+      $('feedsBtns').hidden = !show;
+    }
+
+    function computeFeeds() {
+      const wt = getPatient().wtKg;
+      $('feeds-need').hidden = wt !== null;
+      if (wt === null) { showFeeds(false); return; }
+
+      if (feedsMode === 'feedvol') {
+        const goal = num('goal');
+        if (goal === null || goal <= 0) { showFeeds(false); return; }
+        const perFeed = Math.round(goal * wt / FEEDS_PER_DAY);
+        setFeedsOut('Volume per feed', perFeed, 'mL', 'Total enteral', Math.round(goal), 'mL/kg/day');
+      } else {
+        const vol = num('volPerFeed');
+        if (vol === null || vol <= 0) { showFeeds(false); return; }
+        const mlKgDay = vol * FEEDS_PER_DAY / wt;
+        setFeedsOut('Total enteral', Math.round(mlKgDay), 'mL/kg/day', 'Volume per feed', Math.round(vol), 'mL');
+      }
+      showFeeds(true);
+    }
+
+    function setFeedsOut(l1, v1, u1, l2, v2, u2) {
+      $('fLab1').textContent = l1; $('fOut1').textContent = v1; $('fUnit1').textContent = u1;
+      $('fLab2').textContent = l2; $('fOut2').textContent = v2; $('fUnit2').textContent = u2;
+    }
+
+    // ---------- GIR ----------
+    function buildDrips() {
+      const wrap = $('drips');
+      for (let i = 1; i <= 4; i++) {
+        const row = document.createElement('div');
+        row.className = 'drip';
+        row.innerHTML = `
+          <div class="title">Drip ${i}</div>
+          <div><label for="dex${i}">Dextrose %</label>
+            <input id="dex${i}" type="number" inputmode="decimal" min="0" max="70" step="1" placeholder="${i === 1 ? 'e.g., 10' : ''}" /></div>
+          <div><label for="rate${i}">Rate (mL/h)</label>
+            <input id="rate${i}" type="number" inputmode="decimal" min="0" step="0.1" placeholder="${i === 1 ? 'e.g., 6' : ''}" /></div>`;
+        wrap.appendChild(row);
+      }
+    }
+
+    function computeGir() {
+      const p = getPatient();
+      const wt = p.wtKg;
+      $('gir-need').hidden = wt !== null;
+      if (wt === null) { $('girResults').hidden = true; return; }
+
+      let totalRate = 0, totalGIR = 0;
+      for (let i = 1; i <= 4; i++) {
+        const dex = num(`dex${i}`), rate = num(`rate${i}`);
+        if (dex === null || rate === null || dex <= 0 || rate <= 0) continue;
+        totalGIR += (dex * rate) / (6 * wt);
+        totalRate += rate;
+      }
+      if (totalRate <= 0) { $('girResults').hidden = true; return; }
+
+      const tfi = Math.round(totalRate * 24 / wt);
+      $('gir').textContent = (Math.round(totalGIR * 10) / 10).toFixed(1);
+      $('tfi').textContent = String(tfi);
+      $('girResults').hidden = false;
+
+      const goal = totalFluidGoal(p);
+      $('tfgCompare').hidden = goal === null;
+      if (goal !== null) $('tfgCompare').textContent = `Today's total fluid goal: ${goal} mL/kg/day (IV infusions only; add enteral volume separately).`;
+    }
+
+    // ---------- Persistence (session only, cleared when the app is closed) ----------
+    function save() {
+      try {
+        const data = { feedsMode };
+        [...PATIENT_FIELDS, ...TOOL_FIELDS].forEach(id => data[id] = $(id).value);
+        sessionStorage.setItem(STORE_KEY, JSON.stringify(data));
+      } catch (e) { /* storage unavailable */ }
+    }
+
+    function load() {
+      try {
+        const data = JSON.parse(sessionStorage.getItem(STORE_KEY) || 'null');
+        if (!data) return;
+        [...PATIENT_FIELDS, ...TOOL_FIELDS].forEach(id => { if (data[id] != null) $(id).value = data[id]; });
+        if (data.feedsMode) feedsMode = data.feedsMode;
+      } catch (e) { /* ignore */ }
+    }
+
+    function computeAll() {
+      updateChip();
+      computeCode();
+      computeFluids();
+      computeFeeds();
+      computeGir();
+    }
+
+    // ---------- Routing ----------
+    function route() {
+      let tab = (location.hash || '#patient').slice(1);
+      if (!TITLES[tab]) tab = 'patient';
+      document.querySelectorAll('section.screen').forEach(s => s.classList.toggle('active', s.id === `screen-${tab}`));
+      document.querySelectorAll('nav.tabbar a').forEach(a => {
+        if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      });
+      $('screenTitle').textContent = TITLES[tab];
+      $('ptChip').hidden = tab === 'patient';
+      window.scrollTo(0, 0);
+    }
+
+    function go(tab) { location.hash = tab; }
+
+    // ---------- Wire up ----------
+    buildDrips();
+    load();
+    setFeedsMode(feedsMode);
+
+    [...PATIENT_FIELDS, ...TOOL_FIELDS].forEach(id => {
+      $(id).addEventListener('input', () => { computeAll(); save(); });
+      $(id).addEventListener('change', () => { computeAll(); save(); });
+    });
+    $('modeFeedvol').addEventListener('click', () => setFeedsMode('feedvol'));
+    $('modeTotal').addEventListener('click', () => setFeedsMode('total'));
+    document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+    $('ptChip').addEventListener('click', () => go('patient'));
+
+    $('clearPatient').addEventListener('click', () => {
+      [...PATIENT_FIELDS, ...TOOL_FIELDS].forEach(id => { if (id !== 'wtUnit') $(id).value = ''; });
+      $('wtUnit').value = 'kg';
+      computeAll(); save();
+      $('wt').focus();
+    });
+    $('feedsReset').addEventListener('click', () => { $('goal').value = ''; $('volPerFeed').value = ''; computeAll(); save(); });
+    $('girReset').addEventListener('click', () => {
+      for (let i = 1; i <= 4; i++) { $(`dex${i}`).value = ''; $(`rate${i}`).value = ''; }
+      computeAll(); save();
+    });
+
+    function copy(text) { try { navigator.clipboard?.writeText(text); } catch (e) { /* ignore */ } }
+    $('feedsCopy').addEventListener('click', () => copy(
+      `${$('fLab1').textContent}: ${$('fOut1').textContent} ${$('fUnit1').textContent}\n` +
+      `${$('fLab2').textContent}: ${$('fOut2').textContent} ${$('fUnit2').textContent}`));
+    $('girCopy').addEventListener('click', () => copy(
+      `GIR: ${$('gir').textContent} mg/kg/min\nTotal Fluid Intake: ${$('tfi').textContent} mL/kg/day`));
+
+    window.addEventListener('hashchange', route);
+    computeAll();
+    route();
+
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
