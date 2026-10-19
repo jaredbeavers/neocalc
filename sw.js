@@ -1,10 +1,15 @@
 // Offline support: serve from network when online (so updates show up),
 // fall back to the cached copy when offline.
-const CACHE = 'neocalc-v1';
+const CACHE = 'neocalc-v2';
 const ASSETS = [
   './',
   'index.html',
   'manifest.webmanifest',
+  'data/guidebook-rsi.js',
+  'data/guidebook-meds.js',
+  'data/guidebook-calcs.js',
+  'js/dosing.js',
+  'js/sections.js',
   'icons/icon.svg',
   'icons/icon-192.png',
   'icons/icon-512.png',

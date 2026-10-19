@@ -28,6 +28,10 @@
       --fluids: #1f7a4d;
       --feeds: #8a5a00;
       --gir: #6b3fa0;
+      --rsi: #a3245e;
+      --meds: #1d5fae;
+      --calcs: #4b5563;
+      --hit: #fff3b0;
       --warn-bg: #fff6e0;
       --warn-text: #6b4a00;
       --radius: 14px;
@@ -48,6 +52,10 @@
         --fluids: #4cc38a;
         --feeds: #e0a83a;
         --gir: #b58cf0;
+        --rsi: #f07aae;
+        --meds: #6aa8f0;
+        --calcs: #aab4c2;
+        --hit: #4a3f12;
         --warn-bg: #2d2410;
         --warn-text: #f2cf7a;
         color-scheme: dark;
@@ -93,6 +101,9 @@
     .card.fluids h2 .bar { background: var(--fluids); }
     .card.feeds h2 .bar { background: var(--feeds); }
     .card.gir h2 .bar { background: var(--gir); }
+    .card.rsi h2 .bar { background: var(--rsi); }
+    .card.meds h2 .bar { background: var(--meds); }
+    .calc summary .bar { background: var(--calcs); width: 4px; height: 18px; border-radius: 2px; flex: none; }
 
     label { display: block; font-weight: 600; font-size: .92rem; margin: 10px 0 4px; }
     label:first-child { margin-top: 0; }
@@ -127,6 +138,9 @@
     .tool-btn.fluids { border-left-color: var(--fluids); }
     .tool-btn.feeds { border-left-color: var(--feeds); }
     .tool-btn.gir { border-left-color: var(--gir); }
+    .tool-btn.rsi { border-left-color: var(--rsi); }
+    .tool-btn.meds { border-left-color: var(--meds); }
+    .tool-btn.calcs { border-left-color: var(--calcs); }
     .tool-btn:active { transform: scale(.98); }
 
     /* Result list rows */
@@ -139,6 +153,81 @@
     .kv .v small { display: block; font-weight: 500; font-size: .78rem; color: var(--muted); }
     .code .v { color: var(--code); }
     .code .v.alt { color: var(--accent); }
+    .rsi .v { color: var(--rsi); }
+    .calc .v { color: var(--text); }
+    .kv .v .txt { font-weight: 600; font-size: .9rem; white-space: normal; }
+    .warn-text { color: var(--code); }
+
+    /* Tables */
+    .tbl { overflow-x: auto; margin: 12px 0 4px; -webkit-overflow-scrolling: touch; }
+    .tbl table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+    .tbl th, .tbl td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; vertical-align: top; }
+    .tbl th { background: var(--surface-2); font-weight: 700; }
+    tr.hit td, li.hit { background: var(--hit); }
+    li.hit { border-radius: 4px; }
+    .dz { font-weight: 700; color: var(--meds); white-space: nowrap; }
+
+    details { margin-top: 10px; }
+    details summary { cursor: pointer; font-weight: 600; color: var(--accent); padding: 4px 0; }
+    details h4 { margin: 12px 0 4px; font-size: .9rem; }
+    ul.plain { margin: 0; padding-left: 20px; font-size: .9rem; }
+    ul.plain li { margin: 3px 0; }
+
+    /* Meds */
+    .search {
+      position: sticky; top: calc(48px + env(safe-area-inset-top)); z-index: 5;
+      background: var(--bg); padding: 0 0 10px; margin: 0 -2px;
+    }
+    .search input { padding-left: 38px; background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%238a94a3' stroke-width='2' stroke-linecap='round' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-4-4'/%3E%3C/svg%3E") no-repeat 12px center; }
+    .chips { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 2px; scrollbar-width: none; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip {
+      appearance: none; font: inherit; font-size: .8rem; font-weight: 600; white-space: nowrap; cursor: pointer;
+      border: 1px solid var(--border); background: var(--surface); color: var(--muted); padding: 6px 10px; border-radius: 999px;
+    }
+    .chip[aria-pressed="true"] { background: var(--meds); border-color: var(--meds); color: #fff; }
+    .count { color: var(--muted); font-size: .8rem; margin: 0 0 6px; }
+    ul.med-list { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    ul.med-list li a { display: block; padding: 12px 14px; color: var(--text); text-decoration: none; border-top: 1px solid var(--border); }
+    ul.med-list li:first-child a { border-top: 0; }
+    ul.med-list li a small { display: block; color: var(--muted); font-size: .78rem; }
+    ul.med-list li.grp { background: var(--surface-2); color: var(--muted); font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 8px 14px; border-top: 1px solid var(--border); }
+    ul.med-list li.grp:first-child { border-top: 0; }
+    ul.med-list li.empty { padding: 14px; color: var(--muted); }
+    .med-head { margin-bottom: 12px; }
+    .med-head h2 { margin: 6px 0 4px; font-size: 1.25rem; }
+    .back { color: var(--accent); text-decoration: none; font-weight: 600; font-size: .92rem; }
+    .tag { display: inline-block; font-size: .75rem; font-weight: 600; color: var(--meds); background: color-mix(in srgb, var(--meds) 14%, transparent); padding: 3px 8px; border-radius: 999px; }
+    .med-body { font-size: .95rem; }
+    .med-body h4 { margin: 14px 0 4px; font-size: .95rem; }
+    .med-body ul, .med-body ol { padding-left: 20px; margin: 6px 0; }
+    .med-body li { margin: 4px 0; padding: 1px 3px; }
+    .med-body p { margin: 6px 0; }
+    .html-body table { display: block; overflow-x: auto; border-collapse: collapse; font-size: .85rem; margin: 10px 0; }
+    .html-body th, .html-body td { border: 1px solid var(--border); padding: 6px 8px; vertical-align: top; }
+    ul.rules { list-style: none; margin: 0; padding: 0; }
+    ul.rules li { background: var(--hit); border-radius: 10px; padding: 10px 12px; margin-top: 8px; font-weight: 600; }
+    ul.rules li small { display: block; font-weight: 500; color: var(--muted); }
+    .need-inline { background: var(--warn-bg); color: var(--warn-text); border-radius: 10px; padding: 10px 12px; font-size: .88rem; margin: 10px 0 0; }
+    .need-inline a { color: inherit; font-weight: 700; }
+
+    /* Calcs */
+    .calc { padding: 0; }
+    .calc summary { list-style: none; display: flex; align-items: center; gap: 8px; padding: 14px; color: var(--text); font-weight: 700; }
+    .calc summary::-webkit-details-marker { display: none; }
+    .calc summary::after { content: '›'; margin-left: auto; color: var(--muted); font-size: 1.3rem; transition: transform .15s; }
+    .calc[open] summary::after { transform: rotate(90deg); }
+    .calc > :not(summary) { margin-left: 14px; margin-right: 14px; }
+    .calc .calc-out { padding-bottom: 14px; }
+    .formula { color: var(--muted); font-size: .82rem; margin: 0 0 6px; }
+    .calc-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+    .calc-inputs label { font-size: .82rem; }
+    .calc-inputs .unit { color: var(--muted); font-weight: 500; }
+    .calc-out .kv:first-child { padding-top: 12px; }
+    .btn.small { padding: 8px 12px; font-size: .85rem; margin-top: 8px; }
+
+    /* More menu */
+    .more-list .tool-btn { width: 100%; margin-bottom: 10px; }
 
     /* Tiles */
     .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
@@ -184,9 +273,8 @@
     nav.tabbar svg { width: 24px; height: 24px; }
     nav.tabbar a[aria-current="page"] { color: var(--accent); }
     nav.tabbar a[data-tab="code"][aria-current="page"] { color: var(--code); }
-    nav.tabbar a[data-tab="fluids"][aria-current="page"] { color: var(--fluids); }
-    nav.tabbar a[data-tab="feeds"][aria-current="page"] { color: var(--feeds); }
-    nav.tabbar a[data-tab="gir"][aria-current="page"] { color: var(--gir); }
+    nav.tabbar a[data-tab="rsi"][aria-current="page"] { color: var(--rsi); }
+    nav.tabbar a[data-tab="meds"][aria-current="page"] { color: var(--meds); }
   </style>
 </head>
 <body>
@@ -212,14 +300,15 @@
           </select>
         </div>
 
-        <label for="gaWeeks">Gestational age</label>
+        <label for="gaWeeks">Gestational age at birth</label>
         <div class="row">
           <input id="gaWeeks" type="number" inputmode="numeric" min="20" max="45" step="1" placeholder="weeks" aria-label="Gestational age weeks" />
           <input id="gaDays" type="number" inputmode="numeric" min="0" max="6" step="1" placeholder="days (0–6)" aria-label="Gestational age days" />
         </div>
 
         <label for="dol">Day of life</label>
-        <input id="dol" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g., 1" />
+        <input id="dol" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g., 1 (day of birth)" />
+        <p class="hint" id="pmaHint" hidden></p>
 
         <div class="btns">
           <button type="button" class="btn secondary" id="clearPatient">New patient</button>
@@ -231,6 +320,9 @@
         <button type="button" class="tool-btn fluids" data-go="fluids"><strong>Fluids</strong><span>Total fluid goal</span></button>
         <button type="button" class="tool-btn feeds" data-go="feeds"><strong>Feeds</strong><span>Enteral volumes</span></button>
         <button type="button" class="tool-btn gir" data-go="gir"><strong>GIR</strong><span>GIR &amp; total fluid intake</span></button>
+        <button type="button" class="tool-btn rsi" data-go="rsi"><strong>RSI</strong><span>ETT, premeds, surfactant</span></button>
+        <button type="button" class="tool-btn meds" data-go="meds"><strong>Meds</strong><span>Searchable dosing list</span></button>
+        <button type="button" class="tool-btn calcs" data-go="calcs"><strong>Calcs</strong><span>BSA, exchange, OI, FENa…</span></button>
       </div>
       <p class="disclaimer">Reference tool only. Verify all calculations against institutional protocols.</p>
     </section>
@@ -347,6 +439,44 @@
       </div>
       <p class="note">GIR per drip = (Dextrose % × Rate mL/h) ÷ (6 × Weight kg); overall GIR is the sum. Total fluid intake = (Σ rates × 24) ÷ Weight. GIR rounded to 1 decimal, TFI to whole mL/kg/day.</p>
     </section>
+
+    <!-- ============ RSI ============ -->
+    <section class="screen rsi" id="screen-rsi" aria-label="RSI">
+      <div class="need" id="rsi-need">Enter a <b>weight</b> to see RSI doses. <button type="button" data-go="patient">Go to Patient</button></div>
+      <div id="rsi-body"></div>
+      <p class="disclaimer">Source: NICU Guidebook premedication guideline (09/2023), surfactant guideline (12/2020) and drug list.</p>
+    </section>
+
+    <!-- ============ MEDS ============ -->
+    <section class="screen" id="screen-meds" aria-label="Meds">
+      <div id="medBrowse">
+        <div class="search">
+          <input id="medSearch" type="search" placeholder="Search medications" autocomplete="off" aria-label="Search medications" />
+          <div class="chips" id="medChips" role="group" aria-label="Filter by class"></div>
+        </div>
+        <p class="count" id="medCount"></p>
+        <ul class="med-list" id="medList"></ul>
+        <p class="disclaimer">Copied from the NICU Guidebook drug list. Verify against current pharmacy guidance.</p>
+      </div>
+      <div id="medDetail" hidden></div>
+    </section>
+
+    <!-- ============ CALCS ============ -->
+    <section class="screen" id="screen-calcs" aria-label="Calcs">
+      <p class="hint" style="margin-top:0">Tap a calculator to open it. Weight fields use the patient’s weight unless you type another value.</p>
+      <div id="calcList"></div>
+      <p class="disclaimer">Formulas copied from the NICU Guidebook calculators.</p>
+    </section>
+
+    <!-- ============ MORE ============ -->
+    <section class="screen" id="screen-more" aria-label="More">
+      <div class="more-list">
+        <button type="button" class="tool-btn fluids" data-go="fluids"><strong>Fluids</strong><span>Total fluid goal</span></button>
+        <button type="button" class="tool-btn feeds" data-go="feeds"><strong>Feeds</strong><span>Enteral volumes</span></button>
+        <button type="button" class="tool-btn gir" data-go="gir"><strong>GIR</strong><span>GIR &amp; total fluid intake</span></button>
+        <button type="button" class="tool-btn calcs" data-go="calcs"><strong>Calcs</strong><span>BSA, blood volume, exchange, OI, compliance, anion gap, FENa, Ca-Phos, osmolality</span></button>
+      </div>
+    </section>
   </main>
 
   <nav class="tabbar" aria-label="Sections">
@@ -357,21 +487,23 @@
       <li><a href="#code" data-tab="code">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>
         CODE</a></li>
-      <li><a href="#fluids" data-tab="fluids">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg>
-        Fluids</a></li>
-      <li><a href="#feeds" data-tab="feeds">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2h6M10 2v3l-3 4v11a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9l-3-4V2"/><path d="M7 13h10"/></svg>
-        Feeds</a></li>
-      <li><a href="#gir" data-tab="gir">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10v6l-5 5-5-5z"/><path d="M12 14v4"/><circle cx="12" cy="20" r="1.5"/></svg>
-        GIR</a></li>
+      <li><a href="#rsi" data-tab="rsi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v6a5 5 0 0 0 10 0V3"/><path d="M12 14v7"/><path d="M9 21h6"/></svg>
+        RSI</a></li>
+      <li><a href="#meds" data-tab="meds">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="7" rx="3.5" transform="rotate(-45 12 12.5)"/><path d="m9.5 10 5 5"/></svg>
+        Meds</a></li>
+      <li><a href="#more" data-tab="more">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>
+        More</a></li>
     </ul>
   </nav>
 
   <script>
     const $ = (id) => document.getElementById(id);
-    const TITLES = { patient: 'NeoCalc', code: 'CODE', fluids: 'Fluids', feeds: 'Feeds', gir: 'GIR' };
+    const TITLES = { patient: 'NeoCalc', code: 'CODE', fluids: 'Fluids', feeds: 'Feeds', gir: 'GIR', rsi: 'RSI', meds: 'Meds', calcs: 'Calcs', more: 'More' };
+    // screens reached from the More tab
+    const UNDER_MORE = ['more', 'fluids', 'feeds', 'gir', 'calcs'];
     const STORE_KEY = 'neocalc.v1';
 
     // ---------- Shared patient state ----------
@@ -418,6 +550,13 @@
       if (p.gaWeeks !== null) parts.push(`${p.gaWeeks}+${p.gaDays} wk`);
       if (p.dol !== null) parts.push(`DOL ${p.dol}`);
       $('ptChip').textContent = parts.length ? parts.join(' · ') : 'Enter patient';
+
+      const showPma = p.gaWeeks !== null && p.dol !== null;
+      $('pmaHint').hidden = !showPma;
+      if (showPma) {
+        const days = p.gaWeeks * 7 + p.gaDays + p.dol - 1;
+        $('pmaHint').textContent = `Postmenstrual age ${Math.floor(days / 7)}+${days % 7} wk · postnatal age ${p.dol - 1} d`;
+      }
     }
 
     // ---------- CODE ----------
@@ -588,24 +727,48 @@
       } catch (e) { /* ignore */ }
     }
 
+    // ---------- Sections loaded from js/sections.js register here ----------
+    const modules = [];
+    function currentRoute() {
+      const [tab, sub] = (location.hash || '#patient').slice(1).split('/');
+      return TITLES[tab] ? { tab, sub } : { tab: 'patient', sub: undefined };
+    }
+    window.NeoCalc = {
+      getPatient,
+      register(m) {
+        modules.push(m);
+        m.render(getPatient());
+        const r = currentRoute();
+        if (m.route && r.tab === m.tab) m.route(r.sub, getPatient());
+      },
+      setWeightKg(kg) {
+        $('wt').value = +kg.toFixed(3);
+        $('wtUnit').value = 'kg';
+        computeAll(); save();
+      }
+    };
+
     function computeAll() {
       updateChip();
       computeCode();
       computeFluids();
       computeFeeds();
       computeGir();
+      const p = getPatient();
+      modules.forEach(m => m.render(p));
     }
 
     // ---------- Routing ----------
     function route() {
-      let tab = (location.hash || '#patient').slice(1);
-      if (!TITLES[tab]) tab = 'patient';
+      const { tab, sub } = currentRoute();
       document.querySelectorAll('section.screen').forEach(s => s.classList.toggle('active', s.id === `screen-${tab}`));
+      const navTab = UNDER_MORE.includes(tab) ? 'more' : tab;
       document.querySelectorAll('nav.tabbar a').forEach(a => {
-        if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+        if (a.dataset.tab === navTab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
       });
       $('screenTitle').textContent = TITLES[tab];
       $('ptChip').hidden = tab === 'patient';
+      modules.forEach(m => { if (m.route && m.tab === tab) m.route(sub, getPatient()); });
       window.scrollTo(0, 0);
     }
 
@@ -652,5 +815,11 @@
       window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     }
   </script>
+  <!-- Copied reference data (NeoCalc's own files; see each file's header for its source) -->
+  <script src="data/guidebook-rsi.js"></script>
+  <script src="data/guidebook-meds.js"></script>
+  <script src="data/guidebook-calcs.js"></script>
+  <script src="js/dosing.js"></script>
+  <script src="js/sections.js"></script>
 </body>
 </html>
